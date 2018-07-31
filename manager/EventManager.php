@@ -284,6 +284,53 @@ class EventManager extends BaseManager
         return (!empty(array_intersect($projects, $projectsInManagement))) ? true : false;
     }
 
+    private function _getProjectList($projectId)
+    {
+        $ret = array();
+        $resultDb = $this->database->table('event')->where(':project_event.project_id', $projectId);
+        foreach ($resultDb as $db)
+        {
+            $object = $this->_getEvent($db);
+            $ret[] = $object;
+        }
+        return $ret;
+    }
+
+    private function _getProjectItem($projectId, $eventId)
+    {
+        return $this->_getEvent($this->database->table('event')->where(':project_event.project_id', $projectId)->where("event_id", $eventId)->fetch());
+    }
+
+    public function _eventProjectDelete($projectId, $eventId)
+    {
+        return $this->database->table('project_event')->where('project_id', $projectId)->where('event_id', $eventId)->delete();
+    }
+
+    public function _eventProjectCreate($projectId, $eventId)
+    {
+        return $this->database->table('project_event')->insert(['project_id' => $projectId, 'event_id' => $eventId]);
+    }
+
+    public function getProjectList($projectId)
+    {
+        return $this->_getProjectList($projectId);
+    }
+
+    public function getProjectItem($projectId, $teamId)
+    {
+        return $this->_getProjectItem($projectId, $teamId);
+    }
+
+    public function eventProjectDelete($projectId, $teamId)
+    {
+        return $this->_eventProjectDelete($projectId, $teamId);
+    }
+
+    public function eventProjectCreate($projectId, $teamId)
+    {
+        return $this->_eventProjectCreate($projectId, $teamId);
+    }
+
     private function _getNotificationList($eventId)
     {
         
