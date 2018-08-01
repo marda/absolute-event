@@ -12,11 +12,11 @@ class EventBasePresenter extends BaseRestPresenter
     public function startup()
     {
         parent::startup();
-        /*if (!$this->user->isAllowed('backend'))
+        if (!$this->user->isAllowed('backend'))
         {
             $this->jsonResponse->payload = (['message' => 'Unauthorized!']);
             $this->httpResponse->setCode(Response::S401_UNAUTHORIZED);
-        }*/
+        }
     }
 
     // CONTROL

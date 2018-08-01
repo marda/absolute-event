@@ -124,7 +124,7 @@ class DefaultPresenter extends EventBasePresenter
                 $this->eventCRUDManager->connectTeams($ret, $post['teams']);
 
             if (isset($post['projects']))
-                $this->eventCRUDManager->connectProject($ret, $post['projects']);
+                $this->eventCRUDManager->connectProjects($ret, $post['projects']);
             
             $this->httpResponse->setCode(Response::S201_CREATED);
         }

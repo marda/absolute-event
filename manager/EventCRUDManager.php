@@ -192,6 +192,27 @@ class EventCRUDManager extends BaseCRUDManager
         return true;
     }
 
+    public function connectProjects($id, $projects)
+    {
+        $projects = array_unique(array_filter($projects));
+        // DELETE
+        $this->database->table('project_event')->where('event_id', $id)->delete();
+        // INSERT NEW
+        $data = [];
+        foreach ($projects as $project)
+        {
+            $data[] = [
+                "project_id" => $project,
+                "event_id" => $id,
+            ];
+        }
+        if (!empty($data))
+        {
+            $this->database->table("project_event")->insert($data);
+        }
+        return true;
+    }
+
     public function connectProject($id, $projectId)
     {
         $this->database->table('project_event')->where('event_id', $id)->delete();
@@ -259,7 +280,7 @@ class EventCRUDManager extends BaseCRUDManager
             $this->connectTeams( $id,$array['teams']);
         
         if(isset($array['projects']))
-            $this->connectProject( $id,$array['projects']);
+            $this->connectProjects( $id,$array['projects']);
         
         unset($array['users']);
         unset($array['teams']);
