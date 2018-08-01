@@ -98,33 +98,38 @@ class DefaultPresenter extends EventBasePresenter
     private function _postRequest()
     {
         $post = json_decode($this->httpRequest->getRawBody(), true);
-        
-        $this->_require($post,'title');
-        $post=$this->_set($post,'all_day',0);
-        $post=$this->_set($post,'start_date',null);
-        $post=$this->_set($post,'end_date',null);
-        $post=$this->_set($post,'repeat','');
-        $post=$this->_set($post,'location','');
-        $post=$this->_set($post,'gps_lat',0);
-        $post=$this->_set($post,'gps_lng',0);
-        $post=$this->_set($post,'note','');
-        
-        $ret = $this->eventCRUDManager->create(
-                $this->user->id, 
-                $post['title'], 
-                $post['all_day'], 
-                $post['start_date'], 
-                $post['end_date'], 
-                $post['repeat'], 
-                $post['location'], 
-                $post['gps_lat'], 
-                $post['gps_lng'], 
-                $post['note']);
 
-        if (!$ret)
-            $this->httpResponse->setCode(Response::S500_INTERNAL_SERVER_ERROR);
-        else
+        $this->_require($post, 'title');
+        $post = $this->_set($post, 'all_day', 0);
+        $post = $this->_set($post, 'start_date', null);
+        $post = $this->_set($post, 'end_date', null);
+        $post = $this->_set($post, 'repeat', '');
+        $post = $this->_set($post, 'location', '');
+        $post = $this->_set($post, 'gps_lat', 0);
+        $post = $this->_set($post, 'gps_lng', 0);
+        $post = $this->_set($post, 'note', '');
+
+        $ret = $this->eventCRUDManager->create(
+                $this->user->id, $post['title'], $post['all_day'], $post['start_date'], $post['end_date'], $post['repeat'], $post['location'], $post['gps_lat'], $post['gps_lng'], $post['note']);
+        
+        if ($ret)
+        {
+            if (isset($post['users']))
+                $this->eventCRUDManager->connectUsers($ret, $post['users']);
+
+            if (isset($post['categories']))
+                $this->eventCRUDManager->connectCategories($ret, $post['categories']);
+
+            if (isset($post['teams']))
+                $this->eventCRUDManager->connectTeams($ret, $post['teams']);
+
+            if (isset($post['projects']))
+                $this->eventCRUDManager->connectProject($ret, $post['projects']);
+            
             $this->httpResponse->setCode(Response::S201_CREATED);
+        }
+        else
+            $this->httpResponse->setCode(Response::S500_INTERNAL_SERVER_ERROR);
     }
 
     private function _deleteRequest($id)
