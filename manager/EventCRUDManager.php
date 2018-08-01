@@ -248,9 +248,29 @@ class EventCRUDManager extends BaseCRUDManager
 
     public function updateWithArray($id, $array)
     {
+        
+        if(isset($array['users']))
+            $this->connectUsers( $id,$array['users']);
+        
+        if(isset($array['categories']))
+            $this->connectCategories( $id,$array['categories']);
+        
+        if(isset($array['teams']))
+            $this->connectTeams( $id,$array['teams']);
+        
+        if(isset($array['projects']))
+            $this->connectProject( $id,$array['projects']);
+        
+        unset($array['users']);
+        unset($array['teams']);
+        unset($array['categories']);
+        unset($array['notifications']);
+        unset($array['projects']);
+        
         unset($array['id']);
         unset($array['create']);
         unset($array['user_id']);
+                
         if (isset($array['start_date']))
             $array['start_date'] = DateHelper::validateDate($array['start_date']);
         if (isset($array['end_date']))

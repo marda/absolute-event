@@ -9,9 +9,6 @@ use Absolute\Core\Presenter\BaseRestPresenter;
 class NotificationPresenter extends EventBasePresenter
 {
 
-    /** @var \Absolute\Module\Notification\Manager\NotificationManager @inject */
-    public $notificationManager;
-
     /** @var \Absolute\Module\Event\Manager\EventManager @inject */
     public $eventManager;
 
@@ -42,7 +39,10 @@ class NotificationPresenter extends EventBasePresenter
                 }
                 break;
             case 'POST':
-                $this->_postEventNotificationRequest($resourceId, $subResourceId);
+                $this->_postEventNotificationRequest($resourceId);
+                break;
+            case 'PUT':
+                $this->_putEventNotificationRequest($resourceId, $subResourceId);
                 break;
             case 'DELETE':
                 $this->_deleteEventNotificationRequest($resourceId, $subResourceId);
@@ -57,87 +57,90 @@ class NotificationPresenter extends EventBasePresenter
     //Event
     private function _getEventNotificationListRequest($eventId)
     {
-        if ($this->eventManager->canUserView($eventId, $this->user->id))
+        $eventsList = $this->eventManager->getNotificationList($eventId);
+        if (!$eventsList)
         {
-            $eventsList = $this->notificationManager->getEventList($eventId);
-            if (!$eventsList)
-            {
-                $this->httpResponse->setCode(Response::S404_NOT_FOUND);
-            }
-            else
-            {
-                $this->jsonResponse->payload = array_map(function($n)
-                {
-                    return $n->toJson();
-                }, $eventsList);
-                $this->httpResponse->setCode(Response::S200_OK);
-            }
+            $this->httpResponse->setCode(Response::S404_NOT_FOUND);
         }
         else
         {
-            $this->httpResponse->setCode(Response::S403_FORBIDDEN);
+            $this->jsonResponse->payload = array_map(function($n)
+            {
+                return $n->toCalendarJson();
+            }, $eventsList);
+            $this->httpResponse->setCode(Response::S200_OK);
         }
     }
 
     private function _getEventNotificationRequest($eventId, $notificationId)
     {
-        if ($this->eventManager->canUserView($eventId, $this->user->id))
+        $ret = $this->eventManager->getNotificationById($eventId, $notificationId);
+        if (!$ret)
         {
-            $ret = $this->notificationManager->getEventItem($eventId, $notificationId);
-            if (!$ret)
-            {
-                $this->httpResponse->setCode(Response::S404_NOT_FOUND);
-            }
-            else
-            {
-                $this->jsonResponse->payload = $ret->toJson();
-                $this->httpResponse->setCode(Response::S200_OK);
-            }
+            $this->httpResponse->setCode(Response::S404_NOT_FOUND);
         }
         else
         {
-            $this->httpResponse->setCode(Response::S403_FORBIDDEN);
+            $this->jsonResponse->payload = $ret->toCalendarJson();
+            $this->httpResponse->setCode(Response::S200_OK);
         }
     }
 
-    private function _postEventNotificationRequest($urlId, $urlId2)
+    private function _postEventNotificationRequest($urlId)
     {
-        if ($this->eventManager->canUserView($urlId, $this->user->id))
+        if(!isset($urlId)){
+            $this->httpResponse->setCode(Response::S400_BAD_REQUEST);
+            return ;
+        }
+        $json= json_decode($this->httpRequest->getRawBody(),true);
+        $ret = $this->eventManager->createNotification($urlId, $json["notification_date"], $json["value"], $json["type"], $json["period"], $json["sent"]);
+        if (!$ret)
         {
-            $ret = $this->notificationManager->notificationEventCreate($urlId, $urlId2);
-            if (!$ret)
-            {
-                $this->jsonResponse->payload = [];
-                $this->httpResponse->setCode(Response::S500_INTERNAL_SERVER_ERROR);
-            }
-            else
-            {
-                $this->jsonResponse->payload = [];
-                $this->httpResponse->setCode(Response::S201_CREATED);
-            }
+            $this->jsonResponse->payload = [];
+            $this->httpResponse->setCode(Response::S500_INTERNAL_SERVER_ERROR);
         }
         else
         {
-            $this->httpResponse->setCode(Response::S403_FORBIDDEN);
+            $this->jsonResponse->payload = [];
+            $this->httpResponse->setCode(Response::S201_CREATED);
+        }
+    }
+
+    private function _putEventNotificationRequest($urlId,$urlId2)
+    {
+        if(!isset($urlId)||!isset($urlId2)){
+            $this->httpResponse->setCode(Response::S400_BAD_REQUEST);
+            return ;
+        }
+        $json= json_decode($this->httpRequest->getRawBody(),true);
+        $ret = $this->eventManager->updateNotification($urlId,$urlId2, $json);
+        if (!$ret)
+        {
+            $this->jsonResponse->payload = [];
+            $this->httpResponse->setCode(Response::S500_INTERNAL_SERVER_ERROR);
+        }
+        else
+        {
+            $this->jsonResponse->payload = [];
+            $this->httpResponse->setCode(Response::S201_CREATED);
         }
     }
 
     private function _deleteEventNotificationRequest($urlId, $urlId2)
     {
-        if ($this->eventManager->canUserView($urlId, $this->user->id))
+        if(!isset($urlId)||!isset($urlId2)){
+            $this->httpResponse->setCode(Response::S400_BAD_REQUEST);
+            return ;
+        }
+        $ret = $this->eventManager->deleteNotification($urlId, $urlId2);
+        if (!$ret)
         {
-            $ret = $this->notificationManager->notificationEventDelete($urlId, $urlId2);
-            if (!$ret)
-            {
-                $this->httpResponse->setCode(Response::S404_NOT_FOUND);
-            }
-            else
-            {
-                $this->httpResponse->setCode(Response::S200_OK);
-            }
+            $this->httpResponse->setCode(Response::S404_NOT_FOUND);
         }
         else
-            $this->httpResponse->setCode(Response::S403_FORBIDDEN);
+        {
+            $this->httpResponse->setCode(Response::S200_OK);
+        }
     }
 
 }

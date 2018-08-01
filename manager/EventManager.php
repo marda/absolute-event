@@ -2,8 +2,10 @@
 
 namespace Absolute\Module\Event\Manager;
 
-use Absolute\Core\Manager\BaseManager;
 use Nette\Database\Context;
+use Nette\Utils\DateTime;
+use Absolute\Core\Manager\BaseManager;
+use Absolute\Core\Helper\DateHelper;
 use Absolute\Module\Event\Classes\Event;
 use Absolute\Module\Event\Classes\Notification;
 use Absolute\Module\Team\Manager\TeamManager;
@@ -71,14 +73,13 @@ class EventManager extends BaseManager
         }
         return $object;
     }
-
     protected function _getNotification($db)
     {
         if ($db == false)
         {
             return false;
         }
-        $object = new Classes\Notification($db->id, $db->value, $db->notification_date, $db->type, $db->period, $db->sent, $db->created);
+        $object = new Notification($db->id, $db->value, $db->notification_date, $db->type, $db->period, $db->sent, $db->created);
         return $object;
     }
 
@@ -268,6 +269,51 @@ class EventManager extends BaseManager
         return $ret;
     }
 
+    public function _getNotificationList($id)
+    {
+        $rows = $this->database->fetchAll('SELECT event_notification.* FROM event_notification LEFT JOIN event ON event_notification.event_id=event.id WHERE event.id=?',$id);
+        $ret=[];
+        foreach ($rows as $row){
+            $ret[]=$this->_getNotification($row);
+        }
+        return $ret;
+    }
+
+    public function _getNotificationById($eventId, $id)
+    {
+        return $this->_getNotification($this->database->table('event_notification')->where($eventId)->get($id));
+    }
+
+    public function _createNotification($eventId, $notificationDate, $value, $type, $period, $sent=0)
+    {
+        return $this->database->table('event_notification')->insert([
+            'event_id' => $eventId, 
+            'notification_date' => DateHelper::validateDate($notificationDate), 
+            'value' => $value, 
+            'type' => $type, 
+            'period' => $period, 
+            'sent' => $sent, 
+            'created' => new DateTime()]);
+    }
+
+    public function _updateNotification($eventId,$notificationId, $array)
+    {
+        if(!isset($array))
+            $array=[];
+        if(isset($array["notification_date"]))
+            $array["notification_date"] = DateHelper::validateDate($array["notification_date"]); 
+        unset($array["id"]);
+        unset($array["created"]);
+        $array["event_id"]=$eventId;
+        
+        return $this->database->table('event_notification')->where('id', $notificationId)->update($array);
+    }
+
+    public function _deleteNotification($eventId, $notificationId)
+    {
+        return $this->database->table('event_notification')->where('event_id', $eventId)->where('id', $notificationId)->delete();
+    }
+
     private function _canUserEdit($id, $userId)
     {
         $db = $this->database->table('event')->get($id);
@@ -331,44 +377,29 @@ class EventManager extends BaseManager
         return $this->_eventProjectCreate($projectId, $teamId);
     }
 
-    private function _getNotificationList($eventId)
+    public function getNotificationList($eventId)
     {
-        
+        return $this->_getNotificationList($eventId);
     }
 
-    private function _getNotificationItem($eventId, $notificationId)
+    public function getNotificationById($eventId, $notificationId)
     {
-        
+        return $this->_getNotificationById($eventId, $notificationId);
     }
 
-    private function _createNotification($notificationId, $array)
+    public function createNotification($eventId, $notificationDate, $value, $type, $period, $sent=0)
     {
-        
+        return $this->_createNotification($eventId, $notificationDate, $value, $type, $period, $sent=0);
     }
 
-    private function _updateNotification($notificationId, $array)
+    public function updateNotification($eventId,$notificationId, $array)
     {
-        
+        return $this->_updateNotification($eventId,$notificationId, $array);
     }
 
-    public function getNotifications($eventId)
+    public function deleteNotification($eventId,$notificationId)
     {
-        return $this->getNotifications($eventId);
-    }
-
-    public function getNotification($eventId, $notificationId)
-    {
-        return $this->_getNotification($eventId, $notificationId);
-    }
-
-    public function createNotification($eventId, $array)
-    {
-        return $this->_createNotification($eventId, $array);
-    }
-
-    public function updateNotification($eventId, $array)
-    {
-        return $this->_updateNotification($eventId, $array);
+        return $this->_deleteNotification($eventId,$notificationId);
     }
 
     /* EXTERNAL METHOD */
